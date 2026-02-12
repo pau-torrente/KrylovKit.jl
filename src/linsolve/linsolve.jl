@@ -120,6 +120,19 @@ function linsolve(f, b, x₀, a₀::Number = 0, a₁::Number = 1; kwargs...)
     return linsolve(f, b, x₀, alg, a₀, a₁; alg_rrule = alg_rrule)
 end
 
+# TODO Make sure this belongs Here
+function linsolve(f, b, M⁻¹, x₀, a₀::Number = 0, a₁::Number = 1; kwargs...)
+    T = apply_scalartype(f, x₀, a₀, a₁)
+    alg = linselector(f, b, T; kwargs...)
+    if haskey(kwargs, :alg_rrule)
+        alg_rrule = kwargs[:alg_rrule]
+    else
+        alg_rrule = alg
+    end
+    typeof(alg) != CG && throw(error("Preconditioning is currently only supported with CG"))
+    return linsolve(f, b, M⁻¹, x₀, alg, a₀, a₁; alg_rrule = alg_rrule)
+end
+
 function linselector(
         f, b, T::Type;
         issymmetric::Bool = false,
