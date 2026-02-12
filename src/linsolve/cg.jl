@@ -102,7 +102,7 @@ function linsolve(operator, b, x₀, alg::CG, a₀::Real = 0, a₁::Real = 1; al
     return
 end
 
-function linsolve(operator, preconditioner, b, x₀, alg::CG, a₀::Real = 0, a₁::Real = 1; alg_rrule = alg)
+function linsolve(operator, b, M⁻¹, x₀, alg::CG, a₀::Real = 0, a₁::Real = 1; alg_rrule = alg)
     # Initial function operation and division defines number type
     y₀ = apply(operator, x₀)
     T = typeof(inner(b, y₀) / norm(b) * one(a₀) * one(a₁))
@@ -135,7 +135,7 @@ function linsolve(operator, preconditioner, b, x₀, alg::CG, a₀::Real = 0, a�
     end
 
     # First iteration
-    z = apply(preconditioner, r)
+    z = apply(M⁻¹, r)
     ρ = inner(r, z)
     p = scale!!(zerovector(z), z, 1)
     q = apply(operator, p, α₀, α₁)
@@ -144,7 +144,7 @@ function linsolve(operator, preconditioner, b, x₀, alg::CG, a₀::Real = 0, a�
     r = add!!(r, q, -α)
     normr = norm(r)
     ρold = ρ
-    z = apply(preconditioner, r)
+    z = apply(M⁻¹, r)
     ρ = inner(r, z)
     β = ρ / ρold
     numops += 1
@@ -171,12 +171,13 @@ function linsolve(operator, preconditioner, b, x₀, alg::CG, a₀::Real = 0, a�
         α = ρ / inner(p, q)
         x = add!!(x, p, α)
         r = add!!(r, q, -α)
-        z = apply(preconditioner, r)
+        z = apply(M⁻¹, r)
         normr = norm(r)
         if normr < tol # recompute to account for buildup of floating point errors
             r = scale!!(r, b, 1)
             r = add!!(r, apply(operator, x, α₀, α₁), -1)
             normr = norm(r)
+            z = apply(M⁻¹, r)
             ρ = inner(r, z)
             β = zero(β) # restart CG
         else
