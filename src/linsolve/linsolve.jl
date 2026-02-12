@@ -120,7 +120,7 @@ function linsolve(f, b, x₀, a₀::Number = 0, a₁::Number = 1; kwargs...)
     return linsolve(f, b, x₀, alg, a₀, a₁; alg_rrule = alg_rrule)
 end
 
-# TODO Make sure this belongs Here
+# TODO Implement AD rules for preconditioned linsolve
 function linsolve(f, b, M⁻¹, x₀, a₀::Number = 0, a₁::Number = 1; kwargs...)
     T = apply_scalartype(f, x₀, a₀, a₁)
     alg = linselector(f, b, T; kwargs...)
@@ -129,7 +129,7 @@ function linsolve(f, b, M⁻¹, x₀, a₀::Number = 0, a₁::Number = 1; kwargs
     else
         alg_rrule = alg
     end
-    typeof(alg) != CG && throw(error("Preconditioning is currently only supported with CG"))
+    !(alg isa CG) && throw(error("Preconditioning is currently only supported with CG"))
     return linsolve(f, b, M⁻¹, x₀, alg, a₀, a₁; alg_rrule = alg_rrule)
 end
 

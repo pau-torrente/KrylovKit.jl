@@ -64,6 +64,50 @@
     end
 end
 
+# Test preconditioned CG
+@testset "CG preconditioned problem ($mode)" for mode in (:vector, :inplace, :outplace)
+    scalartypes = mode === :vector ? (Float32, Float64, ComplexF32, ComplexF64) :
+        (ComplexF64,)
+    @testset for T in scalartypes
+        A = rand(T, (n, n))
+        A = A * A' + one(real(T)) * I
+        d = abs.(real(diag(A))) .+ one(real(T))
+        M⁻¹ = Diagonal(inv.(d))
+        xexact = rand(T, n)
+        b = A * xexact
+
+        x, info = @constinferred linsolve(
+            wrapop(A, Val(mode)), wrapvec(b, Val(mode)),
+            wrapop(M⁻¹, Val(mode)), wrapvec(zerovector(b), Val(mode));
+            ishermitian = true, isposdef = true,
+            maxiter = 2n, krylovdim = 1,
+            rtol = tolerance(T), verbosity = SILENT_LEVEL
+        )
+        @test info.converged > 0
+        @test unwrapvec(b) ≈ A * unwrapvec(x)
+
+        alg = CG(; maxiter = 2n, tol = tolerance(T) * norm(b), verbosity = SILENT_LEVEL)
+        x, info = @constinferred linsolve(
+            wrapop(A, Val(mode)), wrapvec(b, Val(mode)),
+            wrapop(M⁻¹, Val(mode)), wrapvec(zerovector(b), Val(mode)),
+            alg
+        )
+        @test info.converged > 0
+        @test unwrapvec(b) ≈ A * unwrapvec(x)
+
+        α₀ = rand(real(T)) + 1
+        α₁ = rand(real(T))
+        bshift = (α₀ * I + α₁ * A) * xexact
+        x, info = @constinferred linsolve(
+            wrapop(A, Val(mode)), wrapvec(bshift, Val(mode)),
+            wrapop(M⁻¹, Val(mode)), wrapvec(zerovector(bshift), Val(mode)),
+            alg, α₀, α₁
+        )
+        @test info.converged > 0
+        @test unwrapvec(bshift) ≈ (α₀ * I + α₁ * A) * unwrapvec(x)
+    end
+end
+
 # Test CG complete
 @testset "CG large problem ($mode)" for mode in (:vector, :inplace, :outplace)
     scalartypes = mode === :vector ? (Float32, Float64, ComplexF32, ComplexF64) :
