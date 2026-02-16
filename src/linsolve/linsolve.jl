@@ -129,7 +129,10 @@ function linsolve(f, b, M⁻¹, x₀, a₀::Number = 0, a₁::Number = 1; kwargs
     else
         alg_rrule = alg
     end
-    !(alg isa CG) && throw(error("Preconditioning is currently only supported with CG"))
+    if !(alg isa CG) 
+        @warn "Preconditioning is currently only supported within the algorithm with CG. Skipping usage of M⁻¹"
+        return linsolve(f, b, x₀, alg, a₀, a₁; alg_rrule = alg_rrule)
+    end
     return linsolve(f, b, M⁻¹, x₀, alg, a₀, a₁; alg_rrule = alg_rrule)
 end
 
