@@ -63,6 +63,8 @@ function linsolve(operator, b, x₀, alg::CG, a₀::Real = 0, a₁::Real = 1; al
         p = add!!(p, r, 1, β)
         q = apply(operator, p, α₀, α₁)
         α = ρ / inner(p, q)
+        @show α
+    
         x = add!!(x, p, α)
         r = add!!(r, q, -α)
         normr = norm(r)
@@ -77,6 +79,7 @@ function linsolve(operator, b, x₀, alg::CG, a₀::Real = 0, a₁::Real = 1; al
             ρ = normr^2
             β = ρ / ρold
         end
+        @show ρ
         numops += 1
         numiter += 1
         if normr < tol
@@ -102,7 +105,7 @@ function linsolve(operator, b, x₀, alg::CG, a₀::Real = 0, a₁::Real = 1; al
     return
 end
 
-function linsolve(operator, b, M⁻¹, x₀, alg::CG, a₀::Real = 0, a₁::Real = 1; alg_rrule = alg)
+function linsolve(operator, b, x₀, M⁻¹, alg::CG, a₀::Real = 0, a₁::Real = 1; alg_rrule = alg)
     # Initial function operation and division defines number type
     y₀ = apply(operator, x₀)
     T = typeof(inner(b, y₀) / norm(b) * one(a₀) * one(a₁))
@@ -169,6 +172,7 @@ function linsolve(operator, b, M⁻¹, x₀, alg::CG, a₀::Real = 0, a₁::Real
         p = add!!(p, z, 1, β)
         q = apply(operator, p, α₀, α₁)
         α = ρ / inner(p, q)
+        @show α
         x = add!!(x, p, α)
         r = add!!(r, q, -α)
         z = apply(M⁻¹, r)
@@ -185,6 +189,7 @@ function linsolve(operator, b, M⁻¹, x₀, alg::CG, a₀::Real = 0, a₁::Real
             ρ = inner(r, z)
             β = ρ / ρold
         end
+        @show ρ
         numops += 1
         numiter += 1
         if normr < tol
